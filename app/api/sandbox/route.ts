@@ -29,7 +29,6 @@ export async function POST(req: Request) {
   fs.mkdirSync(workDir, { recursive: true })
 
   try {
-      // Create files in the workDir
       if (fragment.code && Array.isArray(fragment.code)) {
         fragment.code.forEach((file) => {
           const filePath = path.join(workDir, file.file_path)
@@ -42,10 +41,9 @@ export async function POST(req: Request) {
         fs.writeFileSync(filePath, fragment.code)
       }
 
-      // Docker configuration
-      let dockerImage = 'python:3.11-slim' // Faster default for static files
+      let dockerImage = 'python:3.11-slim'
       let runCmd = ''
-      let port = fragment.port || 80 // Default to 80 for python http.server
+      let port = fragment.port || 80
 
       if (fragment.template.includes('nextjs')) {
           dockerImage = 'node:20-alpine'
@@ -54,35 +52,36 @@ export async function POST(req: Request) {
       } else if (fragment.template.includes('python') || fragment.template === 'nlhz8vlwyupq845jsdg9') {
           dockerImage = 'python:3.11-slim'
           runCmd = `python ${fragment.file_path}`
-          port = 8080 // common python app port
+          port = 8080
       } else {
-          // Default static server (HTML/JS/CSS)
           dockerImage = 'python:3.11-slim'
           runCmd = 'python -m http.server 80'
           port = 80
       }
 
       const containerName = sandboxId
-      // Ensure we expose the port
       const dockerRunCmd = `docker run -d --name ${containerName} -v ${workDir}:/app -w /app -p 0:${port} ${dockerImage} sh -c "${runCmd}"`
       console.log('Running Docker:', dockerRunCmd)
       
       const containerId = execSync(dockerRunCmd).toString().trim()
-      
-      // Wait a moment for container to initialize
       execSync('sleep 1')
 
-      // Get assigned port
       const portOutput = execSync(`docker port ${containerName} ${port}`).toString().trim()
       if (!portOutput) {
           throw new Error(`Failed to map port ${port} for container ${containerName}`)
       }
       
       const assignedPort = portOutput.split(':')[1].trim()
-      const hostIp = '168.231.78.113'
+      
+      // Determine base domain for proxying
+      const hostHeader = req.headers.get('host') || 'fast.eburon.ai'
+      const protocol = req.headers.get('x-forwarded-proto') || 'https'
+      
+      // Proxied URL via Nginx (Solves Mixed Content)
+      const proxiedUrl = `${protocol}://${hostHeader}/sbx/${assignedPort}/`
 
       if (fragment.template === 'nlhz8vlwyupq845jsdg9') {
-          execSync('sleep 2') // Give it time to finish
+          execSync('sleep 2')
           const logs = execSync(`docker logs ${containerName}`).toString()
           const result: ExecutionResultInterpreter = {
               sbxId: containerId,
@@ -98,7 +97,7 @@ export async function POST(req: Request) {
       const result: ExecutionResultWeb = {
           sbxId: containerId,
           template: fragment.template,
-          url: `http://${hostIp}:${assignedPort}`,
+          url: proxiedUrl,
       }
       return new Response(JSON.stringify(result))
 
