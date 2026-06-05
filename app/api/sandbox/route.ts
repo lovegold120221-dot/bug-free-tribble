@@ -29,6 +29,9 @@ export async function POST(req: Request) {
   fs.mkdirSync(workDir, { recursive: true })
 
   try {
+      // Create files in the workDir
+      let primaryFile = fragment.file_path
+      
       if (fragment.code && Array.isArray(fragment.code)) {
         fragment.code.forEach((file) => {
           const filePath = path.join(workDir, file.file_path)
@@ -36,11 +39,16 @@ export async function POST(req: Request) {
           fs.writeFileSync(filePath, file.file_content)
         })
       } else {
-        const filePath = path.join(workDir, fragment.file_path)
+        // If it's HTML but not named index.html, we force index.html so the server root works
+        if (fragment.file_path.endsWith('.html') && fragment.file_path !== 'index.html') {
+            primaryFile = 'index.html'
+        }
+        const filePath = path.join(workDir, primaryFile)
         fs.mkdirSync(path.dirname(filePath), { recursive: true })
         fs.writeFileSync(filePath, fragment.code)
       }
 
+      // Docker configuration
       let dockerImage = 'python:3.11-slim'
       let runCmd = ''
       let port = fragment.port || 80
@@ -51,9 +59,10 @@ export async function POST(req: Request) {
           port = 3000
       } else if (fragment.template.includes('python') || fragment.template === 'nlhz8vlwyupq845jsdg9') {
           dockerImage = 'python:3.11-slim'
-          runCmd = `python ${fragment.file_path}`
+          runCmd = `python ${primaryFile}`
           port = 8080
       } else {
+          // Force index.html for static server if it's not a framework
           dockerImage = 'python:3.11-slim'
           runCmd = 'python -m http.server 80'
           port = 80
@@ -72,12 +81,8 @@ export async function POST(req: Request) {
       }
       
       const assignedPort = portOutput.split(':')[1].trim()
-      
-      // Determine base domain for proxying
       const hostHeader = req.headers.get('host') || 'fast.eburon.ai'
       const protocol = req.headers.get('x-forwarded-proto') || 'https'
-      
-      // Proxied URL via Nginx (Solves Mixed Content)
       const proxiedUrl = `${protocol}://${hostHeader}/sbx/${assignedPort}/`
 
       if (fragment.template === 'nlhz8vlwyupq845jsdg9') {

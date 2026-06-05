@@ -6,7 +6,7 @@ import ratelimit from '@/lib/ratelimit'
 import { fragmentSchema as schema } from '@/lib/schema'
 import { Templates } from '@/lib/templates'
 import { supabase } from '@/lib/supabase'
-import { streamObject } from 'ai'
+import { streamObject, LanguageModelV1 } from 'ai'
 
 export const maxDuration = 300
 
@@ -46,17 +46,19 @@ export async function POST(req: Request) {
     return createRateLimitResponse(limit)
   }
 
-  const modelClient = getModelClient(model, config)
+  const modelClient = getModelClient(model, config) as any
   const systemPrompt = toPrompt(template)
 
   try {
     const stream = await streamObject({
-      model: modelClient as any,
+      model: modelClient as LanguageModelV1,
       schema,
       system: systemPrompt,
       messages,
+      mode: 'json', // Force JSON mode for Cerebras/OpenAI compatibility
       maxRetries: 0,
-      ...config,
+      temperature: config.temperature,
+      topP: config.topP,
       onFinish: async ({ object, error }: { object: any, error: any }) => {
         if (!error && supabase) {
           try {
@@ -78,7 +80,7 @@ export async function POST(req: Request) {
           }
         }
       }
-    })
+    } as any)
 
     return stream.toTextStreamResponse()
   } catch (error: any) {

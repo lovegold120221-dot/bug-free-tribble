@@ -317,6 +317,24 @@ export default function Home() {
             isLoading={isLoading}
             setCurrentPreview={setCurrentPreview}
           />
+          {!messages.length && (
+            <div className="flex flex-wrap gap-2 mb-4 justify-center animate-in fade-in slide-in-from-bottom-2">
+              {[
+                "Create a premium dark-themed landing page for a luxury car brand",
+                "Build a 3D Earth using Three.js with glowing atmosphere",
+                "Design a responsive SaaS dashboard with modern charts",
+                "Create an interactive particles animation background",
+              ].map((prompt) => (
+                <button
+                  key={prompt}
+                  onClick={() => setChatInput(prompt)}
+                  className="text-xs px-3 py-1.5 rounded-full bg-muted border hover:bg-accent transition-colors text-muted-foreground hover:text-foreground"
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          )}
           <ChatInput
             retry={retry}
             isErrored={error !== undefined}
