@@ -55,6 +55,7 @@ export async function POST(req: Request) {
       schema,
       system: systemPrompt,
       messages,
+      mode: 'json', // Explicitly set mode to json for better compatibility
       maxRetries: 0,
       ...config,
       onFinish: async ({ object, error }: { object: any, error: any }) => {
@@ -82,6 +83,7 @@ export async function POST(req: Request) {
 
     return stream.toTextStreamResponse()
   } catch (error: any) {
+    console.error('API Error:', error)
     return handleAPIError(error, { hasOwnApiKey: !!config.apiKey })
   }
 }
