@@ -1,0 +1,39 @@
+{
+  "models": [
+    {
+      "id": "gpt-oss-120b",
+      "provider": "Eburon AI",
+      "providerId": "cerebras",
+      "name": "Eburon Fastcode",
+      "multiModal": true
+    },
+    {
+      "id": "zai-glm-4.7",
+      "provider": "Eburon AI",
+      "providerId": "cerebras",
+      "name": "Eburon-Vision",
+      "multiModal": true
+    },
+    {
+      "id": "gemma3:latest",
+      "provider": "Eburon AI (Local)",
+      "providerId": "ollama",
+      "name": "Eburon-Eyes",
+      "multiModal": true
+    },
+    {
+      "id": "qwen3.5:0.8b",
+      "provider": "Eburon AI (Local)",
+      "providerId": "ollama",
+      "name": "eburon-fast-v2",
+      "multiModal": true
+    },
+    {
+      "id": "deepseek-r1:1.5b",
+      "provider": "Eburon AI (Local)",
+      "providerId": "ollama",
+      "name": "eburon-fast-v3",
+      "multiModal": false
+    }
+  ]
+}
